@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from settings import *
+from text_frames import ToDo
 
 
 class App(ctk.CTk):
@@ -12,7 +13,15 @@ class App(ctk.CTk):
         # Geometry
         self.geometry(f"{APP_SIZE[0]}x{APP_SIZE[1]}")
         self.minsize(APP_MINSIZE[0], APP_MINSIZE[1])
+                                                        
+        ctk.set_appearance_mode("dark")
 
+        # Layout
+        self.columnconfigure((0, 1, 2, 3), weight=1, uniform="a")
+        self.rowconfigure(0, weight=16, uniform="a")
+        self.rowconfigure(1, weight=1, uniform="a")
+        
+        ToDo(self)
         self.mainloop()
 
 
