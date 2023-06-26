@@ -66,7 +66,7 @@ class Doing(ctk.CTkScrollableFrame):
         text = current_label.cget("text")
 
         current_label.destroy()
-        del self.labels[index]
+        del self.labels[index] 
         current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
                               parents_list=self.parents_list)
 
@@ -77,6 +77,8 @@ class Doing(ctk.CTkScrollableFrame):
             x=root.winfo_pointerx() - root.winfo_rootx(),
             y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
+        for index, label in enumerate(self.labels):
+            label.index = index
         
     def move(self, _, index):
         current_label = self.labels[index]
@@ -169,7 +171,8 @@ class ToDo(ctk.CTkScrollableFrame):
             x=root.winfo_pointerx() - root.winfo_rootx(),
             y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
-
+        for index, label in enumerate(self.labels):
+            label.index = index
     def move(self, event, index):
         current_label = self.labels[index]
         root = current_label.winfo_toplevel()
