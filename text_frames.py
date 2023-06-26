@@ -46,6 +46,7 @@ class Doing(ctk.CTkScrollableFrame):
         else:
             formatted_text = ""
         return formatted_text
+    
     def add_label(self, label_text):
         index = len(self.labels)
         label = Label(self, self.get_out_of_frame, self.main_font, index)
@@ -68,7 +69,6 @@ class Doing(ctk.CTkScrollableFrame):
         del self.labels[index]
         current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
                               parents_list=self.parents_list)
-        self.labels.insert(index, current_label)
 
         current_label.configure(text=text, cursor="fleur")
 
@@ -77,7 +77,8 @@ class Doing(ctk.CTkScrollableFrame):
             x=root.winfo_pointerx() - root.winfo_rootx(),
             y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
-    def move(self, event, index):
+        
+    def move(self, _, index):
         current_label = self.labels[index]
         root = current_label.winfo_toplevel()
         current_label.place(
