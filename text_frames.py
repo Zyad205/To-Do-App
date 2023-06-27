@@ -47,7 +47,7 @@ class DoingDone(ctk.CTkScrollableFrame):
         else:
             formatted_text = ""
         return formatted_text
-    
+
     def add_label(self, label_text):
         index = len(self.labels)
         label = Label(self, self.get_out_of_frame, self.main_font, index)
@@ -60,6 +60,8 @@ class DoingDone(ctk.CTkScrollableFrame):
 
         formatted_text = self.get_formatted_text(text=label_text, size=size)
 
+        label.original_text = label_text
+
         label.configure(text=formatted_text)
 
     def get_out_of_frame(self, _, index):
@@ -67,7 +69,7 @@ class DoingDone(ctk.CTkScrollableFrame):
         text = current_label.cget("text")
         original_text = current_label.original_text
         current_label.destroy()
-        del self.labels[index] 
+        del self.labels[index]
         current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
                               parents_list=self.parents_list)
         current_label.original_text = original_text
@@ -81,7 +83,7 @@ class DoingDone(ctk.CTkScrollableFrame):
             anchor="center")
         for index, label in enumerate(self.labels):
             label.index = index
-        
+
     def move(self, _, index):
         current_label = self.labels[index]
         root = current_label.winfo_toplevel()
@@ -158,24 +160,32 @@ class ToDo(ctk.CTkScrollableFrame):
             self.height = event.height
 
     def get_out_of_frame(self, _, index):
+
         current_label = self.labels[index]
         text = current_label.cget("text")
         original_text = current_label.original_text
-
+        
         current_label.destroy()
-        del self.labels[index]
-        current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
-                              parents_list=self.parents_list)
-        current_label.original_text = original_text
-        current_label.configure(text=text, cursor="fleur")
 
-        root = current_label.winfo_toplevel()
-        current_label.place(
+        del self.labels[index]
+
+        
+
+        new_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
+                          parents_list=self.parents_list)
+        new_label.original_text = original_text
+        new_label.configure(text=text, cursor="fleur")
+
+        root = new_label.winfo_toplevel()
+
+        new_label.place(
             x=root.winfo_pointerx() - root.winfo_rootx(),
             y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
+
         for index, label in enumerate(self.labels):
             label.index = index
+
     def move(self, event, index):
         current_label = self.labels[index]
         root = current_label.winfo_toplevel()
@@ -230,17 +240,25 @@ class Label(ctk.CTkLabel):
 
     def release(self, _):
         root = self.winfo_toplevel()
-        x_pos = root.winfo_pointerx()
+        x_pos = root.winfo_pointerx() - root.winfo_rootx()
         one_column = round(root.winfo_width() / 4)
         first_point = one_column + round(root.winfo_width() * 0.125)
         second_point = first_point + one_column
-        
-        if abs(x_pos - first_point) < abs(x_pos - second_point):
-            self.parents_list[0].add_label(self.original_text)
-            self.destroy()
-        else:
-            self.parents_list[1].add_label(self.original_text)
-            self.destroy()
+        third_point = second_point + one_column
+
+        first_point = abs(first_point - x_pos)
+        second_point = abs(second_point - x_pos)
+        third_point = abs(third_point - x_pos)
+
+        temp_dict = {first_point: self.parents_list[0],
+                     second_point: self.parents_list[1],
+                     third_point: self.parents_list[2]}
+
+        parent = temp_dict[min(first_point, second_point, third_point)]
+
+        text = self.original_text
+        self.destroy()
+        parent.add_label(text)
 
 
 class TextInput(ctk.CTkFrame):
