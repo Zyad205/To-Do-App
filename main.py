@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from settings import *
-from text_frames import ToDo, Doing
+from text_frames import ToDo, DoingDone
 
 
 class App(ctk.CTk):
@@ -22,9 +22,11 @@ class App(ctk.CTk):
         self.rowconfigure(1, weight=15, uniform="a")
         self.rowconfigure(2, weight=1, uniform="a")
         self.to_do = ToDo(self)
-        self.doing = Doing(self)
-        self.to_do.parents_list = [self.to_do, self.doing]
-        self.doing.parents_list = [self.to_do, self.doing]
+        self.doing = DoingDone(self, 2)
+        self.done = DoingDone(self, 3)
+        self.to_do.parents_list = [self.to_do, self.doing, self.done]
+        self.doing.parents_list = [self.to_do, self.doing, self.done]
+        self.done.parents_list = [self.to_do, self.doing, self.done]
         # Developing settings
         self.bind("<FocusOut>", exit)
         self.mainloop()

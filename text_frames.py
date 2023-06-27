@@ -3,9 +3,9 @@ from settings import *
 from textwrap import TextWrapper
 
 
-class Doing(ctk.CTkScrollableFrame):
+class DoingDone(ctk.CTkScrollableFrame):
 
-    def __init__(self, parent):
+    def __init__(self, parent, column):
         super().__init__(parent, fg_color="#000000")
         self.parent = parent
         self.main_font = ctk.CTkFont(*TEXT_FONT)
@@ -14,7 +14,7 @@ class Doing(ctk.CTkScrollableFrame):
         self.width = self.winfo_width()
         self.height = self.winfo_height()
 
-        self.grid(row=1, column=2, rowspan=2, sticky="NSEW", padx=10)
+        self.grid(row=1, column=column, rowspan=2, sticky="NSEW", padx=10)
 
     def reformat_text(self, event):
         self._parent_canvas.configure(
@@ -24,13 +24,14 @@ class Doing(ctk.CTkScrollableFrame):
 
                 self.update()
                 size = self.text_input.winfo_width() - 20
-                label_text = label.cget("text")
+                label_text = label.original_text
                 formatted_text = self.get_formatted_text(
                     text=label_text, size=size)
 
                 label.configure(text=formatted_text)
             self.width = event.width
             self.height = event.height
+
     def get_formatted_text(self, text, size):
         if text:
             char_size = []
@@ -64,11 +65,12 @@ class Doing(ctk.CTkScrollableFrame):
     def get_out_of_frame(self, _, index):
         current_label = self.labels[index]
         text = current_label.cget("text")
-
+        original_text = current_label.original_text
         current_label.destroy()
         del self.labels[index] 
         current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
                               parents_list=self.parents_list)
+        current_label.original_text = original_text
 
         current_label.configure(text=text, cursor="fleur")
 
@@ -112,6 +114,7 @@ class ToDo(ctk.CTkScrollableFrame):
 
         index = len(self.labels)
         label = Label(self, self.get_out_of_frame, self.main_font, index)
+        label.original_text = label_text
 
         self.labels.append(label)
 
@@ -122,7 +125,6 @@ class ToDo(ctk.CTkScrollableFrame):
         formatted_text = self.get_formatted_text(text=label_text, size=size)
 
         label.configure(text=formatted_text)
-
         self.text_input.pack_forget()
         self.text_input.pack(fill="x", padx=1, pady=1)
 
@@ -147,7 +149,7 @@ class ToDo(ctk.CTkScrollableFrame):
 
                 self.update()
                 size = self.text_input.winfo_width() - 20
-                label_text = label.cget("text")
+                label_text = label.original_text
                 formatted_text = self.get_formatted_text(
                     text=label_text, size=size)
 
@@ -158,12 +160,13 @@ class ToDo(ctk.CTkScrollableFrame):
     def get_out_of_frame(self, _, index):
         current_label = self.labels[index]
         text = current_label.cget("text")
+        original_text = current_label.original_text
 
         current_label.destroy()
         del self.labels[index]
         current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
                               parents_list=self.parents_list)
-
+        current_label.original_text = original_text
         current_label.configure(text=text, cursor="fleur")
 
         root = current_label.winfo_toplevel()
@@ -233,10 +236,10 @@ class Label(ctk.CTkLabel):
         second_point = first_point + one_column
         
         if abs(x_pos - first_point) < abs(x_pos - second_point):
-            self.parents_list[0].add_label(self.cget("text"))
+            self.parents_list[0].add_label(self.original_text)
             self.destroy()
         else:
-            self.parents_list[1].add_label(self.cget("text"))
+            self.parents_list[1].add_label(self.original_text)
             self.destroy()
 
 
