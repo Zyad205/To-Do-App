@@ -68,21 +68,29 @@ class DoingDone(ctk.CTkScrollableFrame):
         current_label = self.labels[index]
         text = current_label.cget("text")
         original_text = current_label.original_text
+
+        width = current_label.winfo_width()
+
         current_label.destroy()
+
         del self.labels[index]
-        current_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
-                              parents_list=self.parents_list)
-        current_label.original_text = original_text
+        new_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
+                          parents_list=self.parents_list)
+        new_label.original_text = original_text
 
-        current_label.configure(text=text, cursor="fleur")
+        new_label.configure(text=text, cursor="fleur", width=width)
 
-        root = current_label.winfo_toplevel()
-        current_label.place(
-            x=root.winfo_pointerx() - root.winfo_rootx(),
-            y=root.winfo_pointery() - root.winfo_rooty(),
+        root = new_label.winfo_toplevel()
+        x, y = root.winfo_pointerxy()
+
+        new_label.place(
+            x=x - root.winfo_rootx(),
+            y=y - root.winfo_rooty(),
             anchor="center")
+
         for index, label in enumerate(self.labels):
             label.index = index
+        
 
     def move(self, _, index):
         current_label = self.labels[index]
@@ -164,27 +172,28 @@ class ToDo(ctk.CTkScrollableFrame):
         current_label = self.labels[index]
         text = current_label.cget("text")
         original_text = current_label.original_text
-        
+        width = current_label.winfo_width()
         current_label.destroy()
 
         del self.labels[index]
 
-        
-
         new_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
                           parents_list=self.parents_list)
         new_label.original_text = original_text
-        new_label.configure(text=text, cursor="fleur")
+        new_label.configure(text=text, cursor="fleur", width=width)
 
         root = new_label.winfo_toplevel()
 
+        x, y = root.winfo_pointerxy()
+
         new_label.place(
-            x=root.winfo_pointerx() - root.winfo_rootx(),
-            y=root.winfo_pointery() - root.winfo_rooty(),
+            x=x - root.winfo_rootx(),
+            y=y - root.winfo_rooty(),
             anchor="center")
 
         for index, label in enumerate(self.labels):
             label.index = index
+ 
 
     def move(self, event, index):
         current_label = self.labels[index]
@@ -224,12 +233,15 @@ class Label(ctk.CTkLabel):
 
         self.index = index
         self.parents_list = parents_list
+        self.first_time = True
         if not out_out_frame:
             self.bind("<B1-Motion>", lambda event:
                       move_func(event, self.index))
         else:
             self.bind("<B1-Motion>", self.move)
-            self.bind("<ButtonRelease-1>", self.release)
+            self.released = False
+            self.bind("<ButtonRelease-1>", self.small_func)
+            self.move(0)
 
     def move(self, _):
         root = self.winfo_toplevel()
@@ -237,8 +249,16 @@ class Label(ctk.CTkLabel):
             x=root.winfo_pointerx() - root.winfo_rootx(),
             y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
+        if self.first_time:
+            self.unbind("<B1-Motion>")
+            self.first_time = False
+        if not self.released:
+            self.last_func = self.after(10, lambda: self.move(0))
+        else:
+            self.after_cancel(self.last_func)
+            self.release()
 
-    def release(self, _):
+    def release(self):
         root = self.winfo_toplevel()
         x_pos = root.winfo_pointerx() - root.winfo_rootx()
         one_column = round(root.winfo_width() / 4)
@@ -250,16 +270,20 @@ class Label(ctk.CTkLabel):
         second_point = abs(second_point - x_pos)
         third_point = abs(third_point - x_pos)
 
+
         temp_dict = {first_point: self.parents_list[0],
                      second_point: self.parents_list[1],
                      third_point: self.parents_list[2]}
 
         parent = temp_dict[min(first_point, second_point, third_point)]
-
+        self.released = True
         text = self.original_text
-        self.destroy()
         parent.add_label(text)
+        self.destroy()
 
+
+    def small_func(self, _):
+        self.released = True
 
 class TextInput(ctk.CTkFrame):
     def __init__(self, parent, add_label_func, close_input, font):
@@ -317,10 +341,12 @@ class TextInput(ctk.CTkFrame):
 class CreateInputFrame(ctk.CTkFrame):
 
     def __init__(self, parent, open_func, font):
-        super().__init__(parent)
+        super().__init__(parent, fg_color="transparent")
 
         self.label = ctk.CTkButton(
-            self, text="+ Add a card", font=font, height=1, width=1, command=open_func)
-        self.label.pack(expand=True, fill="x")
+            self, text="+ Add a card", font=font, height=1, width=1, command=open_func,
+            fg_color="#000000", hover_color="#282f28")
+
+        self.label.pack(fill="x", pady=2)
 
         self.grid(row=2, column=1, sticky="NSEW")
