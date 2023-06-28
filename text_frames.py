@@ -6,23 +6,43 @@ from textwrap import TextWrapper
 class DoingDone(ctk.CTkScrollableFrame):
 
     def __init__(self, parent, column):
+        """Create a scrollable frame"""
+        # Parent init function 
         super().__init__(parent, fg_color="#000000")
+
+
+        # Store the main window
         self.parent = parent
+
+        # Main font 
         self.main_font = ctk.CTkFont(*TEXT_FONT)
+
         self.labels = []
+
+        # Will hand text warping
         self.wrap = TextWrapper()
+        
         self.width = self.winfo_width()
         self.height = self.winfo_height()
+        
 
+        # Placing
         self.grid(row=1, column=column, rowspan=2, sticky="NSEW", padx=10)
 
     def reformat_text(self, event):
+        """Reformat the labels after changing the size of the window"""
+        
         self._parent_canvas.configure(
             scrollregion=self._parent_canvas.bbox("all"))
+        
         if event.width != self.width or event.height != self.height:
             for label in self.labels:
 
+
+                # Get the updated size
                 self.update()
+
+
                 size = self.text_input.winfo_width() - 20
                 label_text = label.original_text
                 formatted_text = self.get_formatted_text(
@@ -33,16 +53,27 @@ class DoingDone(ctk.CTkScrollableFrame):
             self.height = event.height
 
     def get_formatted_text(self, text, size):
+        """Return the text with \\n so the text 
+        won't get croped, arguments the {text} and {size}"""
+        # Check the text is not empty 
         if text:
             char_size = []
+            
+            # Get the average size for every character
             for char in text:
                 char_size.append(self.main_font.measure(char))
 
             char_size = sum(char_size) / len(char_size)
+            
+            # Get the number of characters that would fit in given size
             char_num = size / char_size
+            
+            # Update the wrap object with appropriate number
+            # of characters in one line
             self.wrap.width = round(char_num)
 
             text_list = self.wrap.wrap(text)
+            # Make the list a string again with {\\n}
             formatted_text = '\n'.join(text_list)
         else:
             formatted_text = ""
