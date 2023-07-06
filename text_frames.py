@@ -1,73 +1,79 @@
 import customtkinter as ctk
 from settings import *
 from textwrap import TextWrapper
+from PIL import Image
+
+
+def save_label(header, text):
+    with open(f"{header}.txt", "w") as file:
+        for index, item in enumerate(text):
+            text[index] = item.replace("\n", "") + "\n"
+        file.writelines(text)
 
 
 class DoingDone(ctk.CTkScrollableFrame):
 
-    def __init__(self, parent, column):
+    def __init__(self, parent, column, header):
         """Create a scrollable frame"""
-        # Parent init function 
+        # Parent init function
         super().__init__(parent, fg_color="#000000")
-
 
         # Store the main window
         self.parent = parent
 
-        # Main font 
+        # Main font
         self.main_font = ctk.CTkFont(*TEXT_FONT)
 
-        self.labels = []
+        self.header = header
 
+        self.labels = []
+        self.text = []
         # Will hand text warping
         self.wrap = TextWrapper()
-        
+
         self.width = self.winfo_width()
         self.height = self.winfo_height()
-        
 
         # Placing
         self.grid(row=1, column=column, rowspan=2, sticky="NSEW", padx=10)
 
     def reformat_text(self, event):
         """Reformat the labels after changing the size of the window"""
-        
+
         self._parent_canvas.configure(
             scrollregion=self._parent_canvas.bbox("all"))
-        
-        if event.width != self.width or event.height != self.height:
-            for label in self.labels:
 
+        if event.width != self.width or event.height != self.height:
+            for label_frame in self.labels:
 
                 # Get the updated size
                 self.update()
 
-
-                size = self.text_input.winfo_width() - 20
-                label_text = label.original_text
+                size = label_frame.winfo_width() - 20
+                label_text = label_frame.original_text
                 formatted_text = self.get_formatted_text(
                     text=label_text, size=size)
 
-                label.configure(text=formatted_text)
+                label_frame.label.configure(text=formatted_text)
             self.width = event.width
             self.height = event.height
 
     def get_formatted_text(self, text, size):
-        """Return the text with \\n so the text 
-        won't get croped, arguments the {text} and {size}"""
-        # Check the text is not empty 
+        """Return the text with \\n so the text
+        won't get cropped, arguments the {text} and {size}"""
+        # Check the text is not empty
         if text:
             char_size = []
-            
+
             # Get the average size for every character
             for char in text:
                 char_size.append(self.main_font.measure(char))
 
             char_size = sum(char_size) / len(char_size)
-            
+
             # Get the number of characters that would fit in given size
             char_num = size / char_size
-            
+
             # Update the wrap object with appropriate number
             # of characters in one line
             self.wrap.width = round(char_num)
@@ -81,35 +87,55 @@ class DoingDone(ctk.CTkScrollableFrame):
 
     def add_label(self, label_text):
         index = len(self.labels)
-        label = Label(self, self.get_out_of_frame, self.main_font, index)
+        label_frame = Label(self, self.get_out_of_frame,
+                            self.main_font, index, self.delete_label)
 
-        self.labels.append(label)
+        self.labels.append(label_frame)
 
-        label.pack(fill="x", pady=5)
+        self.text.append(label_text)
+        save_label(self.header, self.text)
+        label_frame.pack(fill="x", pady=5)
         self.update()
-        size = label.winfo_width() - 20
 
+        size = label_frame.label.winfo_width() - 20
         formatted_text = self.get_formatted_text(text=label_text, size=size)
 
-        label.original_text = label_text
+        label_frame.original_text = label_text
 
-        label.configure(text=formatted_text)
+        label_frame.label.configure(text=formatted_text)
+
+    def delete_label(self, index):
+        current_label = self.labels[index]
+        current_label.destroy()
+
+        del self.text[index]
+        del self.labels[index]
+
+        save_label(self.header, self.text)
+        
+        for index, label in enumerate(self.labels):
+            label.index = index
 
     def get_out_of_frame(self, _, index):
         current_label = self.labels[index]
-        text = current_label.cget("text")
+        text = current_label.label.cget("text")
         original_text = current_label.original_text
 
         width = current_label.winfo_width()
 
         current_label.destroy()
 
+
+        del self.text[index]
         del self.labels[index]
-        new_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
-                          parents_list=self.parents_list)
+
+        save_label(self.header, self.text)
+
+        new_label = Label(self.parent, self.move, self.main_font, index, self.delete_label,
+                          out_out_frame=True, parents_list=self.parents_list)
         new_label.original_text = original_text
 
-        new_label.configure(text=text, cursor="fleur", width=width)
+        new_label.label.configure(text=text, cursor="fleur", width=width)
 
         root = new_label.winfo_toplevel()
         x, y = root.winfo_pointerxy()
@@ -119,9 +145,8 @@ class DoingDone(ctk.CTkScrollableFrame):
             y=y - root.winfo_rooty(),
             anchor="center")
 
-        for index, label in enumerate(self.labels):
-            label.index = index
-        
+        for index, label_frame in enumerate(self.labels):
+            label_frame.index = index
 
     def move(self, _, index):
         current_label = self.labels[index]
@@ -134,40 +159,52 @@ class DoingDone(ctk.CTkScrollableFrame):
 
 class ToDo(ctk.CTkScrollableFrame):
 
-    def __init__(self, parent):
+    def __init__(self, parent, header):
         super().__init__(parent, fg_color="#000000")
 
         self.main_font = ctk.CTkFont(*TEXT_FONT)
 
+        self.header = header
+
         self.text_input = TextInput(
             self, self.add_label, self.close_input, self.main_font)
-        self.grid(row=1, column=1, rowspan=2, sticky="NSEW", padx=10)
-
+        self.grid(row=1, column=0, rowspan=2, sticky="NSEW", padx=10)
         self.wrap = TextWrapper()
 
         self.parent = parent
         self.labels = []
         self.width = self.winfo_width()
         self.height = self.winfo_height()
+
+        self.text = []
+
         self.bind("<Configure>", self.reformat_text)
 
     def add_label(self, label_text):
+        if not label_text or label_text.isspace():
+            pass
+        else:
+            index = len(self.labels)
+            label_frame = Label(self, self.get_out_of_frame,
+                                self.main_font, index, self.delete_label)
+            label_frame.original_text = label_text
 
-        index = len(self.labels)
-        label = Label(self, self.get_out_of_frame, self.main_font, index)
-        label.original_text = label_text
+            self.text.append(label_text)
 
-        self.labels.append(label)
+            save_label(self.header, self.text)
 
-        label.pack(fill="x", pady=5)
-        self.update()
-        size = label.winfo_width() - 20
+            self.labels.append(label_frame)
 
-        formatted_text = self.get_formatted_text(text=label_text, size=size)
+            label_frame.pack(fill="x", pady=5)
+            self.update()
+            size = label_frame.winfo_width() - 20
 
-        label.configure(text=formatted_text)
-        self.text_input.pack_forget()
-        self.text_input.pack(fill="x", padx=1, pady=1)
+            formatted_text = self.get_formatted_text(text=label_text, size=size)
+
+            label_frame.label.configure(text=formatted_text)
+            if self.text_input.winfo_ismapped():
+                self.text_input.pack_forget()
+                self.text_input.pack(fill="x", padx=1, pady=1)
 
     def close_input(self):
         self.grid_forget()
@@ -178,7 +215,7 @@ class ToDo(ctk.CTkScrollableFrame):
 
     def open_input(self):
         self.grid_forget()
-        self.grid(row=1, column=1, rowspan=2, sticky="NSEW", padx=10)
+        self.grid(row=0, column=1, rowspan=2, sticky="NSEW", padx=10)
         self.create_input_frame.grid_forget()
         self.text_input.pack(fill="x")
 
@@ -186,32 +223,47 @@ class ToDo(ctk.CTkScrollableFrame):
         self._parent_canvas.configure(
             scrollregion=self._parent_canvas.bbox("all"))
         if event.width != self.width or event.height != self.height:
-            for label in self.labels:
+            for label_frame in self.labels:
 
                 self.update()
-                size = self.text_input.winfo_width() - 20
-                label_text = label.original_text
+                size = label_frame.winfo_width() - 20
+                label_text = label_frame.original_text
                 formatted_text = self.get_formatted_text(
                     text=label_text, size=size)
 
-                label.configure(text=formatted_text)
+                label_frame.label.configure(text=formatted_text)
             self.width = event.width
             self.height = event.height
+
+    def delete_label(self, index):
+        current_label = self.labels[index]
+        current_label.destroy()
+
+        del self.text[index]
+        del self.labels[index]
+
+        save_label(self.header, self.text)
+
+        for index, label in enumerate(self.labels):
+            label.index = index
 
     def get_out_of_frame(self, _, index):
 
         current_label = self.labels[index]
-        text = current_label.cget("text")
+        text = current_label.label.cget("text")
         original_text = current_label.original_text
         width = current_label.winfo_width()
         current_label.destroy()
 
+        del self.text[index]
         del self.labels[index]
+        
+        save_label(self.header, self.text)
 
-        new_label = Label(self.parent, self.move, self.main_font, index, out_out_frame=True,
+        new_label = Label(self.parent, self.move, self.main_font, index, self.delete_label, out_out_frame=True,
                           parents_list=self.parents_list)
         new_label.original_text = original_text
-        new_label.configure(text=text, cursor="fleur", width=width)
+        new_label.label.configure(text=text, cursor="fleur", width=width)
 
         root = new_label.winfo_toplevel()
 
@@ -221,10 +273,6 @@ class ToDo(ctk.CTkScrollableFrame):
             x=x - root.winfo_rootx(),
             y=y - root.winfo_rooty(),
             anchor="center")
-
-        for index, label in enumerate(self.labels):
-            label.index = index
- 
 
     def move(self, event, index):
         current_label = self.labels[index]
@@ -251,27 +299,52 @@ class ToDo(ctk.CTkScrollableFrame):
         return formatted_text
 
 
-class Label(ctk.CTkLabel):
+class Label(ctk.CTkFrame):
 
-    def __init__(self, parent, move_func, font, index, out_out_frame=False, parents_list=None):
-        super().__init__(
-            parent,
+    def __init__(self, parent, move_func, font, index, delete_func, out_out_frame=False, parents_list=None):
+        super().__init__(parent, corner_radius=2, fg_color="transparent")
+
+        self.columnconfigure(0, weight=1, uniform="a")
+        self.rowconfigure(0, weight=1, uniform="a")
+
+        self.close_image = Image.open("delete.png")
+
+        self.close_image_tk = ctk.CTkImage(self.close_image)
+
+        self.label = ctk.CTkLabel(
+            self,
             justify="left",
             font=font,
             fg_color=INPUT_TEXT_COLOR,
             corner_radius=5,
             anchor="w")
+        self.label.grid(row=0, column=0, sticky="NSEW")
+
+        self.delete_button = ctk.CTkButton(
+            self,
+            text="",
+            command=lambda: self.delete_func(),
+            fg_color=TEXT_FRAMES_COLOR,
+            bg_color=TEXT_FRAMES_COLOR,
+            hover_color="#FF0000",
+            image=self.close_image_tk)
 
         self.index = index
         self.parents_list = parents_list
         self.first_time = True
+        self.close_func = delete_func
+        self.can_unshow = True
+
         if not out_out_frame:
-            self.bind("<B1-Motion>", lambda event:
-                      move_func(event, self.index))
+            self.label.bind("<B1-Motion>", lambda event:
+                            move_func(event, self.index))
+            self.label.bind("<Leave>", self.unshow_delete)
+            self.label.bind("<Enter>", self.show_delete)
+
         else:
             self.bind("<B1-Motion>", self.move)
             self.released = False
-            self.bind("<ButtonRelease-1>", self.small_func)
+            self.label.bind("<ButtonRelease-1>", self.small_func)
             self.move(0)
 
     def move(self, _):
@@ -281,7 +354,7 @@ class Label(ctk.CTkLabel):
             y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
         if self.first_time:
-            self.unbind("<B1-Motion>")
+            self.label.unbind("<B1-Motion>")
             self.first_time = False
         if not self.released:
             self.last_func = self.after(10, lambda: self.move(0))
@@ -290,17 +363,18 @@ class Label(ctk.CTkLabel):
             self.release()
 
     def release(self):
+
         root = self.winfo_toplevel()
+
         x_pos = root.winfo_pointerx() - root.winfo_rootx()
-        one_column = round(root.winfo_width() / 4)
-        first_point = one_column + round(root.winfo_width() * 0.125)
+        one_column = round(root.winfo_width() / 3)
+        first_point = one_column / 2
         second_point = first_point + one_column
         third_point = second_point + one_column
 
         first_point = abs(first_point - x_pos)
         second_point = abs(second_point - x_pos)
         third_point = abs(third_point - x_pos)
-
 
         temp_dict = {first_point: self.parents_list[0],
                      second_point: self.parents_list[1],
@@ -312,9 +386,20 @@ class Label(ctk.CTkLabel):
         parent.add_label(text)
         self.destroy()
 
-
     def small_func(self, _):
         self.released = True
+
+    def delete_func(self):
+        self.close_func(self.index)
+
+    def show_delete(self, _):
+        self.delete_button.place(
+            relx=0.9, rely=0.5, anchor="center", relheight=0.7, relwidth=0.1)
+
+    def unshow_delete(self, event):
+        if event.y < 0 or event.y > self.winfo_height() or event.x < 0 or event.x > self.winfo_width():
+            self.delete_button.place_forget()
+
 
 class TextInput(ctk.CTkFrame):
     def __init__(self, parent, add_label_func, close_input, font):
@@ -380,4 +465,4 @@ class CreateInputFrame(ctk.CTkFrame):
 
         self.label.pack(fill="x", pady=2)
 
-        self.grid(row=2, column=1, sticky="NSEW")
+        self.grid(row=2, column=0, sticky="NSEW")
