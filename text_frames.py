@@ -4,7 +4,7 @@ from textwrap import TextWrapper
 from PIL import Image
 
 
-def save_label(header, text):
+def save_text(header, text):
     with open(f"{header}.txt", "w") as file:
         for index, item in enumerate(text):
             text[index] = item.replace("\n", "") + "\n"
@@ -24,10 +24,15 @@ class DoingDone(ctk.CTkScrollableFrame):
         # Main font
         self.main_font = ctk.CTkFont(*TEXT_FONT)
 
+        # Store the name of the frame to open corresponding text file
+        # for saving
         self.header = header
 
+        # To store labels
         self.labels = []
+        # Save text for saving
         self.text = []
+
         # Will hand text warping
         self.wrap = TextWrapper()
 
@@ -39,22 +44,24 @@ class DoingDone(ctk.CTkScrollableFrame):
 
     def reformat_text(self, event):
         """Reformat the labels after changing the size of the window"""
-
+        # A builtin function
         self._parent_canvas.configure(
             scrollregion=self._parent_canvas.bbox("all"))
-
+        
+        # Only check will the frame size changed
         if event.width != self.width or event.height != self.height:
             for label_frame in self.labels:
-
                 # Get the updated size
                 self.update()
-
                 size = label_frame.winfo_width() - 20
+
+                # Get the original text
                 label_text = label_frame.original_text
                 formatted_text = self.get_formatted_text(
-                    text=label_text, size=size)
+                    label_text, size)
 
                 label_frame.label.configure(text=formatted_text)
+            
             self.width = event.width
             self.height = event.height
 
@@ -86,88 +93,126 @@ class DoingDone(ctk.CTkScrollableFrame):
         return formatted_text
 
     def add_label(self, label_text):
-        index = len(self.labels)
-        label_frame = Label(self, self.get_out_of_frame,
-                            self.main_font, index, self.delete_label)
+        """Takes a the label text and add a label to the frame"""
 
+        # Get the index for the new label
+        index = len(self.labels)
+
+        # Create a new label
+        label_frame = Label(
+            self,
+            self.get_out_of_frame,
+            self.main_font,
+            index,
+            self.delete_label)
+
+        # Save the new label
         self.labels.append(label_frame)
 
-        self.text.append(label_text)
-        save_label(self.header, self.text)
+        # Packing it
         label_frame.pack(fill="x", pady=5)
+
+        # Getting updated sized of the label
         self.update()
-
         size = label_frame.label.winfo_width() - 20
-        formatted_text = self.get_formatted_text(text=label_text, size=size)
 
+        # Getting the text with the {\n} 
+        formatted_text = self.get_formatted_text(label_text, size)
+
+        # Give the label the original text
         label_frame.original_text = label_text
 
+        # Puts the formatted text on the label
         label_frame.label.configure(text=formatted_text)
 
+        # Save the text of the label for saving it
+        self.text.append(label_text)
+        save_text(self.header, self.text)
+
     def delete_label(self, index):
+        """Takes the index of the label and delete it"""
+
+        # Destroy the label
         current_label = self.labels[index]
         current_label.destroy()
 
+        # Deleting the text and labels
         del self.text[index]
         del self.labels[index]
-
-        save_label(self.header, self.text)
         
+        # Reindex all the labels
         for index, label in enumerate(self.labels):
             label.index = index
 
-    def get_out_of_frame(self, _, index):
+        # Resave the text
+        save_text(self.header, self.text)
+
+    def get_out_of_frame(self, index):
+        """When a the label is hold on it's get destroyed then create a new
+        one out of the text frames then follow the mouse"""
+
+        # Get the current label
         current_label = self.labels[index]
+        # Getting current text and the original text without formatting
         text = current_label.label.cget("text")
         original_text = current_label.original_text
 
+        # Get the width of the label
         width = current_label.winfo_width()
 
+        # Destroy current label
         current_label.destroy()
 
-
-        del self.text[index]
+        # Delete the label from our list
         del self.labels[index]
 
-        save_label(self.header, self.text)
-
-        new_label = Label(self.parent, self.move, self.main_font, index, self.delete_label,
+        # Create a new label out of any text frames
+        new_label = Label(self.parent, None, self.main_font, index, self.delete_label,
                           out_out_frame=True, parents_list=self.parents_list)
+        # Give the label the original text without {\n}
         new_label.original_text = original_text
 
-        new_label.label.configure(text=text, cursor="fleur", width=width)
+        # Configuration
+        new_label.label.configure(text=text, width=width)
 
+        # Put the center of the label on the mouse position
         root = new_label.winfo_toplevel()
         x, y = root.winfo_pointerxy()
-
         new_label.place(
             x=x - root.winfo_rootx(),
             y=y - root.winfo_rooty(),
             anchor="center")
 
+        # Reindex the labels
         for index, label_frame in enumerate(self.labels):
             label_frame.index = index
-
-    def move(self, _, index):
-        current_label = self.labels[index]
-        root = current_label.winfo_toplevel()
-        current_label.place(
-            x=root.winfo_pointerx() - root.winfo_rootx(),
-            y=root.winfo_pointery() - root.winfo_rooty(),
-            anchor="center")
+        
+        # Deleting the text of the label from out list then save the changes 
+        del self.text[index]
+        save_text(self.header, self.text)
 
 
 class ToDo(ctk.CTkScrollableFrame):
 
     def __init__(self, parent, header):
-        super().__init__(parent, fg_color="#000000")
+        """Create a scrollable frame"""
 
+        # Parent init function
+        super().__init__(parent, fg_color="#000000")
+        # Main font
         self.main_font = ctk.CTkFont(*TEXT_FONT)
 
+        # Store the name of the frame to open corresponding text file
+        # for saving
         self.header = header
 
+        # Make a input frame
         self.text_input = TextInput(
-            self, self.add_label, self.close_input, self.main_font)
+            self,
+            self.add_label,
+            self.close_input,
+            self.main_font)
+        # Self Layout
         self.grid(row=1, column=0, rowspan=2, sticky="NSEW", padx=10)
         self.wrap = TextWrapper()
 
@@ -191,7 +236,7 @@ class ToDo(ctk.CTkScrollableFrame):
 
             self.text.append(label_text)
 
-            save_label(self.header, self.text)
+            save_text(self.header, self.text)
 
             self.labels.append(label_frame)
 
@@ -208,14 +253,14 @@ class ToDo(ctk.CTkScrollableFrame):
 
     def close_input(self):
         self.grid_forget()
-        self.grid(row=1, column=1, sticky="NSEW")
+        self.grid(row=1, column=0, rowspan=2, sticky="NSEW")
         self.create_input_frame = CreateInputFrame(
             self.parent, self.open_input, self.main_font)
         self.text_input.pack_forget()
 
     def open_input(self):
         self.grid_forget()
-        self.grid(row=0, column=1, rowspan=2, sticky="NSEW", padx=10)
+        self.grid(row=0, column=0, rowspan=2, sticky="NSEW", padx=10)
         self.create_input_frame.grid_forget()
         self.text_input.pack(fill="x")
 
@@ -242,12 +287,12 @@ class ToDo(ctk.CTkScrollableFrame):
         del self.text[index]
         del self.labels[index]
 
-        save_label(self.header, self.text)
+        save_text(self.header, self.text)
 
         for index, label in enumerate(self.labels):
             label.index = index
 
-    def get_out_of_frame(self, _, index):
+    def get_out_of_frame(self, index):
 
         current_label = self.labels[index]
         text = current_label.label.cget("text")
@@ -258,9 +303,9 @@ class ToDo(ctk.CTkScrollableFrame):
         del self.text[index]
         del self.labels[index]
         
-        save_label(self.header, self.text)
+        save_text(self.header, self.text)
 
-        new_label = Label(self.parent, self.move, self.main_font, index, self.delete_label, out_out_frame=True,
+        new_label = Label(self.parent, None, self.main_font, index, self.delete_label, out_out_frame=True,
                           parents_list=self.parents_list)
         new_label.original_text = original_text
         new_label.label.configure(text=text, cursor="fleur", width=width)
@@ -272,14 +317,6 @@ class ToDo(ctk.CTkScrollableFrame):
         new_label.place(
             x=x - root.winfo_rootx(),
             y=y - root.winfo_rooty(),
-            anchor="center")
-
-    def move(self, event, index):
-        current_label = self.labels[index]
-        root = current_label.winfo_toplevel()
-        current_label.place(
-            x=root.winfo_pointerx() - root.winfo_rootx(),
-            y=root.winfo_pointery() - root.winfo_rooty(),
             anchor="center")
 
     def get_formatted_text(self, text, size):
@@ -336,8 +373,7 @@ class Label(ctk.CTkFrame):
         self.can_unshow = True
 
         if not out_out_frame:
-            self.label.bind("<B1-Motion>", lambda event:
-                            move_func(event, self.index))
+            self.label.bind("<B1-Motion>", lambda _: move_func(self.index))
             self.label.bind("<Leave>", self.unshow_delete)
             self.label.bind("<Enter>", self.show_delete)
 
