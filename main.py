@@ -2,7 +2,7 @@ import customtkinter as ctk
 from settings import *
 from text_frames import ToDo, DoingDone
 import os
-
+from sys import argv
 
 class App(ctk.CTk):
     def __init__(self):
@@ -61,7 +61,7 @@ class App(ctk.CTk):
         """Checks for widget from the last run"""
 
         # Get current directory
-        current_directory = os.getcwd()
+        current_directory = os.path.dirname(argv[0])
 
         # Endings for every save file
         dirs = ["todo.txt", "doing.txt", "done.txt"]

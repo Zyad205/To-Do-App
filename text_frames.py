@@ -302,7 +302,7 @@ class ToDo(ctk.CTkScrollableFrame):
         """Remaps the text input and closes the CreateInputButton"""
         # New self layout
         self.grid_forget()
-        self.grid(row=0, column=0, rowspan=2, sticky="NSEW", padx=10)
+        self.grid(row=1, column=0, rowspan=2, sticky="NSEW", padx=10)
 
         self.create_input_button.grid_forget()
         # Remap text input
@@ -533,8 +533,9 @@ class Label(ctk.CTkFrame):
 
     def unshow_delete(self, event):
         # Only unshow the button of the cursor is out of the label
-        if event.y < 0 or event.y > self.winfo_height()\
-                or event.x < 0 or event.x > self.winfo_width():
+        
+        if event.y - 1 < 0 or event.y + 1 > self.winfo_height()\
+                or event.x - 1 < 0 or event.x + 1 > self.winfo_width():
             self.delete_button.place_forget()
 
 
