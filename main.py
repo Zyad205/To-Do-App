@@ -4,6 +4,7 @@ from text_frames import ToDo, DoingDone
 import os
 from sys import argv
 
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()

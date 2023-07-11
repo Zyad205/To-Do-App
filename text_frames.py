@@ -558,7 +558,7 @@ class TextInput(ctk.CTkFrame):
             wrap="word")
 
         self.add_label_func = add_label_func
-
+        self.input.bind("<Return>", lambda _: self.add_label())
         self.add_button = ctk.CTkButton(
             self,
             text="Add card",
@@ -569,7 +569,7 @@ class TextInput(ctk.CTkFrame):
             command=self.add_label)
 
         self.input.grid(row=0, column=0, columnspan=5, sticky="NSEW")
-        self.input.bind("<Shift-Return>", lambda _: self.add_label())
+
         self.add_button.grid(
             row=1,
             column=0,
@@ -594,8 +594,12 @@ class TextInput(ctk.CTkFrame):
         text = self.input.get(1.0, "end")
 
         self.add_label_func(text)
+        
         # Deletes the text
         self.input.delete(1.0, "end")
+        # Delete the \n after this function is finished if this function
+        # is called by a bind event
+        self.after(1, lambda: self.input.delete(1.0, "end"))
 
 
 class CreateInputButton(ctk.CTkFrame):
